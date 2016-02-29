@@ -1,6 +1,6 @@
 ## beyond remote
 
-用于封装ajax和fetch请求
+用于封装ajax和fetch请求，此库依赖promise，推荐使用 [es6-promise](https://www.npmjs.com/package/es6-promise) ，ie8 还需要引入 es5-shim 
 
 
 ### 使用方式

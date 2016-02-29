@@ -7,7 +7,7 @@
 
 #### 基本使用
 ```javascript
-var remote = require('@best/beyond-remote').remote
+var remote = require('beyond-remote').remote
 
 //default base params
 remote.base({
@@ -49,7 +49,7 @@ getUser(1).then(function(json){
 
 注册请求的全局事件
 ```javascript
-var remote = require('@best/beyond-remote').remote
+var remote = require('beyond-remote').remote
 remote.on('start',startHandle)
 remote.on('send',sendHandle)
 remote.on('success',successHandle)
@@ -66,12 +66,12 @@ getUser() //事件发生顺序依次为  start 异步请求api end; 异步请求
 
 获取新的 remote 实例,强烈建议根据不同的api basePath 定义remote实例
 ```javascript
-var remote = require('@best/beyond-remote').remote
+var remote = require('beyond-remote').remote
 remote.base({basePath : '/api'})
 remote.on('send',sendHandle)
 
 
-var remote2 = require('@best/beyond-remote').create()
+var remote2 = require('beyond-remote').create()
 remote2.base({basePath : '/api2'})
 remote2.on('start',startHandle)
 ```

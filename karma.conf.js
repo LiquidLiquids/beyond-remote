@@ -78,8 +78,24 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome', 'IE', 'Firefox'],
+    // browsers: ['Chrome', 'IE', 'Firefox'],
+    browsers: ['Chrome', 'Firefox', 'IE8','IE9','IE10','IE'],
+    // browsers:['IE9','Chrome'],
+    customLaunchers: {
+      IE10: {
+        base: 'IE',
+        'x-ua-compatible': 'IE=EmulateIE10'
+      },
 
+      IE9: {
+        base: 'IE',
+        'x-ua-compatible': 'IE=EmulateIE9'
+      },
+      IE8: {
+        base: 'IE',
+        'x-ua-compatible': 'IE=EmulateIE8'
+      }
+    },
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits

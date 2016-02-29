@@ -1,4 +1,4 @@
-var beyondRemote = require('../src/index')
+var beyondRemote = require('../lib/index')
 describe("exports",function() {
 	it("should have an instance and a instance creat function",function(){
 		var constructor = beyondRemote.remote.constructor

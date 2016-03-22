@@ -1,8 +1,15 @@
 require("../styles/style.less")
-window.__disableNativeFetch = true 
+
 var remote = require('src/index.js').remote
+remote.base({
+	requestJSON : false
+})
+
 var cb = remote.extend({
-	url : '/api/db'
+	url : '/api/todos',
+	method : 'POST',
+	body : {a:1}
+	
 })
 cb().then()
 

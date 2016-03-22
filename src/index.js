@@ -88,6 +88,17 @@ function mergeUrl(basePath,url){
 	return basePath + url
 }
 
+function serialize(obj) {
+	if (obj) {
+		let arr = []
+		for(var k in obj){
+			arr.push(`${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`)
+		}
+		return arr.join('&')
+	}
+	return null
+}
+
 function createFetch(url,options,remote) {
 	return function () {
 		remote.trigger('start')
@@ -158,6 +169,13 @@ Remote.prototype.extend = function (options={}) {
 		}
 		if (ops.body && Object.prototype.toString.call(ops.body) === '[object Object]') {
 			ops.body = JSON.stringify(ops.body)
+		}
+	}else{
+		if (ops.method === 'POST' && ops.headers['Content-Type'] == null) {
+			ops.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+			if (ops.body && Object.prototype.toString.call(ops.body) === '[object Object]') {
+				ops.body = serialize(ops.body)
+			}
 		}
 	}
 	if (metas.responseJSON && !ops.headers['Accept']) {

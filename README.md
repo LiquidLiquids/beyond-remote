@@ -22,13 +22,14 @@ var getUsers = remote.extend({
 })
 
 var getUser = function(id){
-	return remote.extend({
+	var call = remote.extend({
 		url : '/user/detail',
 		headers : {
 			'Content-Type' : 'application/json'
 		},
 		body : {id : 1}
 	})
+	return call()
 }
 
 getUsers().then(function(json){

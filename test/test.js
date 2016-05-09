@@ -1,4 +1,4 @@
-var beyondRemote = require('../lib/index')
+var beyondRemote = require('../src/index')
 describe("exports",function() {
 	it("should have an instance and a instance creat function",function(){
 		var constructor = beyondRemote.remote.constructor
@@ -96,6 +96,9 @@ describe("remote events",function(){
 		var remote1 = beyond.extend({
 			url : '/mock/db.json'
 		})
+		beyond.on('error',function(){
+			error++
+		})
 		beyond.on('success',function(){
 			success++
 		})
@@ -110,7 +113,7 @@ describe("remote events",function(){
 		})
 
 	})
-	it("should works on error & complete",function(){
+	it("should works on error & complete",function(done){
 		var beyond = beyondRemote.create()
 		var basePath = '/base'
 		var method = 'POST'
@@ -126,12 +129,12 @@ describe("remote events",function(){
 			url : '/mock/undefined.json'
 		})
 		beyond.on('error',function(){
-			success++
+			error++
 		})
 		beyond.on('complete',function(){
 			complete++
 		})
-		remote1().catch(function(){
+		remote1().then(function(){
 			expect(success).toEqual(0)
 			expect(complete).toEqual(1)
 			expect(error).toEqual(1)

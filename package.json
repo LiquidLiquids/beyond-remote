@@ -1,6 +1,6 @@
 {
   "name": "beyond-remote",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "an ajax call maker",
   "main": "lib/index.js",
   "scripts": {

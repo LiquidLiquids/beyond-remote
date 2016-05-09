@@ -88,6 +88,10 @@ function mergeUrl(basePath,url){
 	return basePath + url
 }
 
+function isObj(obj) {
+	return obj &&  Object.prototype.toString.call(obj) === '[object Object]'
+}
+
 function serialize(obj) {
 	if (obj) {
 		let arr = []
@@ -104,7 +108,7 @@ function createFetch(url,options,remote) {
 		remote.trigger('start')
 		let result = fetch(url,options)
 		.then((response)=>{
-			let isSuccess = response.status >= 200 && response.status < 300
+			let isSuccess = response.ok || (response.status >= 200 && response.status < 300)
 			if (isSuccess) {
 				remote.trigger('success')
 			}else{
@@ -153,6 +157,7 @@ Remote.prototype.extend = function (options={}) {
 	const metas = assign({},this._base,options)
 	const url = typeof url === 'string' || url == null ? mergeUrl(metas.basePath,metas.url || '') : metas.url 
 	for(let k in options){
+		//这四个参数从 metas 获取
 		if (['url','basePath','requestJSON','responseJSON'].indexOf(k) < 0) {
 			if (k === 'headers') {
 				assign(ops.headers,options[k])
@@ -163,23 +168,22 @@ Remote.prototype.extend = function (options={}) {
 	}
 	ops.method = ops.method.toUpperCase()
 	//'Content-Type': 'application/json'
-	if (metas.requestJSON) {
-		if (!ops.headers['Content-Type']) {
-			ops.headers['Content-Type'] = 'application/json'
-		}
-		if (ops.body && Object.prototype.toString.call(ops.body) === '[object Object]') {
-			ops.body = JSON.stringify(ops.body)
-		}
-	}else{
-		if (ops.method === 'POST' && ops.headers['Content-Type'] == null) {
-			ops.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-			if (ops.body && Object.prototype.toString.call(ops.body) === '[object Object]') {
-				ops.body = serialize(ops.body)
-			}
-		}
+	if (metas.requestJSON && !ops.headers['Content-Type'])  {
+		ops.headers['Content-Type'] = 'application/json'
 	}
 	if (metas.responseJSON && !ops.headers['Accept']) {
 		ops.headers['Accept'] = 'application/json'
+	}
+
+
+	if (ops.headers['Content-Type'] && ops.headers['Content-Type'].indexOf('application/json') >= 0 && isObj(ops.body)) {
+		ops.body = JSON.stringify(ops.body)
+	}
+	if (ops.method === 'POST' && !ops.headers['Content-Type']) {
+		ops.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+		if (isObj(ops.body)) {
+			ops.body = serialize(ops.body)
+		}
 	}
 
 	return createFetch(url,ops,this)

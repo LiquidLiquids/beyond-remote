@@ -65,72 +65,63 @@
 'use strict';
 
 const assign = require('beyond-lib/lib/assign');
-const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8');
+const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8')
 
 function isfunc(func) {
-	return typeof func === 'function';
+	return typeof func === 'function'
 }
 
-function mergeUrl(basePath, url) {
-	if (!basePath || !url) {
-		return basePath + url;
-	} else if (/\/$/.test(basePath) && /^\//.test(url)) {
-		return basePath + url.slice(1);
-	} else if (!/\/$/.test(basePath) && !/^\//.test(url)) {
-		return basePath + '/' + url;
-	}
-	return basePath + url;
+function mergeUrl(basePath='', url='') {
+	return (basePath + url).replace(/\/+/,'/')
 }
 
 function isObj(obj) {
-	return obj && Object.prototype.toString.call(obj) === '[object Object]';
+	return obj && Object.prototype.toString.call(obj) === '[object Object]'
 }
 
 function isFormData(obj) {
-	return obj && Object.prototype.toString.call(obj) === '[object FormData]';
+	return obj && Object.prototype.toString.call(obj) === '[object FormData]'
 }
 
 function serialize(obj) {
 	if (obj) {
-		let arr = [];
+		let arr = []``
 		for (var k in obj) {
-			arr.push(encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]));
+			arr.push(encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
 		}
-		return arr.join('&');
+		return arr.join('&')
 	}
-	return null;
+	return null
 }
 
 function Timeout(ms, msg) {
 	return new Promise((resolve, reject) => {
-			setTimeout(function () {
-				reject(msg);
-			}, ms);
-});
+		setTimeout(()=>reject(msg) , ms)
+	}
 }
 
 
 function createFetch(url, options, timeout, remote) {
 	let func = function func() {
-		remote.trigger('start');
+		remote.trigger('start')
 		let result = new Promise((resolve, reject) =>{
-				Promise.race([fetch(url, options), Timeout(timeout.ms, timeout.msg)])
-				.then(function (response) {
-					let isSuccess = response.ok || response.status >= 200 && response.status < 300;
-					if (isSuccess) {
-						remote.trigger('success', response);
-					} else {
-						throw response;
-					}
-					remote.trigger('complete', response);
-					let data = response.headers.get('content-type') &&  response.headers.get('content-type').indexOf('json') >= 0 ? response.json() : response.text();
-					resolve(data);
-				})
-				.catch(function (error) {
-					remote.trigger('error', error);
-					remote.trigger('complete', error);
-					reject(error);
-				});
+			Promise.race([fetch(url, options), Timeout(timeout.ms, timeout.msg)])
+			.then(function (response) {
+				let isSuccess = response.ok || response.status >= 200 && response.status < 300;
+				if (isSuccess) {
+					remote.trigger('success', response);
+				} else {
+					throw response;
+				}
+				remote.trigger('complete', response);
+				let data = response.headers.get('content-type') &&  response.headers.get('content-type').indexOf('json') >= 0 ? response.json() : response.text();
+				resolve(data);
+			})
+			.catch(function (error) {
+				remote.trigger('error', error);
+				remote.trigger('complete', error);
+				reject(error);
+			});
 		remote.trigger('send');
 	});
 		return result;

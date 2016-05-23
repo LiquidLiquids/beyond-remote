@@ -21,6 +21,7 @@ var remote = require('beyond-remote').remote
 remote.base({
 	basePath : '',
 	method : 'GET',
+	credentials: 'omit',
 	requestJSON : true,
 	responseJSON : true
 })
@@ -42,11 +43,15 @@ var getUser = function(id){
 
 getUsers().then(function(json){
 	console.log(json)
+}).catch(function(error){
+    console.log(error)
 })
 
 getUser(1).then(function(json){
 	console.log(json)
-})
+}).catch(function(error){
+      console.log(error)
+  })
 ```
 `requestJSON` 为 true 会设置 `Content-Type` 为 `application/json` 如果 Content-Type 没有指定，并会将 object 类型的 body 通过 `JSON.stringify` 转化 json 格式字符串
 
@@ -54,6 +59,8 @@ getUser(1).then(function(json){
 `responseJSON` 为 true 会设置 `Accept` 为 `application/json`
 
 如果返回 headers 的 `Content-Type` 为  `application/json` , 则自动将返回数据做json转换
+
+如果 body 的内容是 `FormData` 类型 , 请将 `requestJSON` 设为`false` , 且不指定 Content-Type , 则将由服务端指定 Content-Type 的类型.
 
 ## 高级
 

@@ -4,6 +4,7 @@
  * remote.base({
  * 	basePath : '/basePath',
  * 	method : 'post',
+ * 	credentials: 'include',
  * 	requestJSON : true,
  * 	responseJSON : true,
  * 	headers : {
@@ -27,7 +28,6 @@
  * exports.getUser = remote.extend({
  * 	url : '/getUser',
  * 	body : JSON.stringify({id : 1})
- *  
  * })
  *
  * remotes/api2.js
@@ -47,6 +47,8 @@
  * 	 body : JSON.stringify({id})
  *  }).then(function(response){
  *  	return response.json()
+ *  }).catch(function(error){
+ *      return error
  *  })
  * }
  *
@@ -59,145 +61,182 @@
  * users.getUser()
  *
  */
-const assign = require('beyond-lib/lib/assign') 
-const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8')
-function noop(){}
 
-function Remote() {
-	this._base = {
-		basePath : '',
-		method : 'GET',
-		requestJSON : true,
-		responseJSON : true
-	}
-	this._handles = {}
-}
+'use strict';
+
+const assign = require('beyond-lib/lib/assign');
+const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8');
 
 function isfunc(func) {
-	return typeof func === 'function'
+	return typeof func === 'function';
 }
 
-function mergeUrl(basePath,url){
+function mergeUrl(basePath, url) {
 	if (!basePath || !url) {
-		return basePath + url
-	}else if (/\/$/.test(basePath) && /^\//.test(url)) {
-		return basePath + url.slice(1)
-	}else if (!/\/$/.test(basePath) && !/^\//.test(url)){
-		return basePath + '/' + url
+		return basePath + url;
+	} else if (/\/$/.test(basePath) && /^\//.test(url)) {
+		return basePath + url.slice(1);
+	} else if (!/\/$/.test(basePath) && !/^\//.test(url)) {
+		return basePath + '/' + url;
 	}
-	return basePath + url
+	return basePath + url;
 }
 
 function isObj(obj) {
-	return obj &&  Object.prototype.toString.call(obj) === '[object Object]'
+	return obj && Object.prototype.toString.call(obj) === '[object Object]';
+}
+
+function isFormData(obj) {
+	return obj && Object.prototype.toString.call(obj) === '[object FormData]';
 }
 
 function serialize(obj) {
 	if (obj) {
-		let arr = []
-		for(var k in obj){
-			arr.push(`${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`)
+		let arr = [];
+		for (var k in obj) {
+			arr.push(encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]));
 		}
-		return arr.join('&')
+		return arr.join('&');
 	}
-	return null
+	return null;
 }
 
-function createFetch(url,options,remote) {
-	return function () {
-		remote.trigger('start')
-		let result = fetch(url,options)
-		.then((response)=>{
-			let isSuccess = response.ok || (response.status >= 200 && response.status < 300)
-			if (isSuccess) {
-				remote.trigger('success')
-			}else{
-				throw response
+function Timeout(ms, msg) {
+	return new Promise((resolve, reject) => {
+			setTimeout(function () {
+				reject(msg);
+			}, ms);
+});
+}
+
+
+function createFetch(url, options, timeout, remote) {
+	let func = function func() {
+		remote.trigger('start');
+		let result = new Promise((resolve, reject) =>{
+				Promise.race([fetch(url, options), Timeout(timeout.ms, timeout.msg)])
+				.then(function (response) {
+					let isSuccess = response.ok || response.status >= 200 && response.status < 300;
+					if (isSuccess) {
+						remote.trigger('success', response);
+					} else {
+						throw response;
+					}
+					remote.trigger('complete', response);
+					let data = response.headers.get('content-type') &&  response.headers.get('content-type').indexOf('json') >= 0 ? response.json() : response.text();
+					resolve(data);
+				})
+				.catch(function (error) {
+					remote.trigger('error', error);
+					remote.trigger('complete', error);
+					reject(error);
+				});
+		remote.trigger('send');
+	});
+		return result;
+	};
+	func.url = url;
+	func.options = options;
+	return func;
+}
+
+function Remote() {
+	this._base = {
+		basePath: '',
+		method: 'GET',
+		requestJSON: true,
+		responseJSON: true,
+		timeout: 90000,
+		timeoutMsg: {
+			ok: false,
+			text: 'timeout',
+			status: 900,
+			title: '服务器超时！请重试！'
+		},
+		credentials: 'omit'
+	};
+	this._handlers = {};
+}
+
+Remote.prototype.on = function (type, handler) {
+	this._handlers[type] = this._handlers[type] || [];
+	this._handlers[type].push(handler);
+};
+
+Remote.prototype.off = function (type, handler) {
+	let i = undefined;
+	if (this._handlers[type] && (i = this._handlers[type].indexOf(handler)) >= 0) {
+		this._handlers[type].splice(i, 1);
+	}
+};
+
+Remote.prototype.trigger = function (type, arg) {
+	if (this._handlers[type]) {
+		this._handlers[type].forEach(function (handler) {
+			if (isfunc(handler)) {
+				handler(arg);
 			}
-			remote.trigger('complete')
-			return response.headers.get('content-type').indexOf('json') >= 0  ? response.json() : response.text()
-		})
-		.catch((e)=>{
-			remote.trigger('error')
-			remote.trigger('complete')
-			return e
-		})
-		remote.trigger('send')
-		return result
-	} 
-}
-
-Remote.prototype.on = function(type,handle){
-	this._handles[type] = this._handles[type] || []
-	this._handles[type].push(handle)
-}
-
-Remote.prototype.off = function(type,handle){
-	let i 
-	if (this._handles[type] && (i = this._handles[type].indexOf(handle)) >= 0 ) {
-		this._handles[type].splice(i,1)
+		});
 	}
-}
+};
 
-Remote.prototype.trigger = function(type){
-	if (this._handles[type]) {
-		this._handles[type].forEach(function(handle){
-			if (typeof handle === 'function') {
-				handle()
-			}
-		})
-	}
-}
+Remote.prototype.extend = function () {
+	let options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-Remote.prototype.extend = function (options={}) {
-	const ops = {
-		headers : {},
-		method : this._base.method
-	}
-	const metas = assign({},this._base,options)
-	const url = typeof url === 'string' || url == null ? mergeUrl(metas.basePath,metas.url || '') : metas.url 
-	for(let k in options){
+	let ops = {
+		headers: assign({}, this._base.headers),
+		method: this._base.method,
+		credentials: this._base.credentials
+	};
+	let metas = assign({}, this._base, options);
+	let url = typeof url === 'string' || url == null ? mergeUrl(metas.basePath, metas.url || '') : metas.url;
+	for (let k in options) {
 		//这四个参数从 metas 获取
-		if (['url','basePath','requestJSON','responseJSON'].indexOf(k) < 0) {
+		if (['url', 'basePath', 'requestJSON', 'responseJSON'].indexOf(k) < 0) {
 			if (k === 'headers') {
-				assign(ops.headers,options[k])
-			}else{
-				ops[k] = options[k]
+				assign(ops.headers, options[k]);
+			} else {
+				ops[k] = options[k];
 			}
 		}
 	}
-	ops.method = ops.method.toUpperCase()
+	ops.method = ops.method.toUpperCase();
 	//'Content-Type': 'application/json'
-	if (metas.requestJSON && !ops.headers['Content-Type'])  {
-		ops.headers['Content-Type'] = 'application/json'
+	if (metas.requestJSON && !ops.headers['Content-Type']) {
+		ops.headers['Content-Type'] = 'application/json';
 	}
 	if (metas.responseJSON && !ops.headers['Accept']) {
-		ops.headers['Accept'] = 'application/json'
+		ops.headers['Accept'] = 'application/json';
 	}
-
 
 	if (ops.headers['Content-Type'] && ops.headers['Content-Type'].indexOf('application/json') >= 0 && isObj(ops.body)) {
-		ops.body = JSON.stringify(ops.body)
+		ops.body = JSON.stringify(ops.body);
 	}
-	if (ops.method === 'POST' && !ops.headers['Content-Type']) {
-		ops.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+	if (ops.method === 'POST' && !ops.headers['Content-Type'] && !isFormData(ops.body)) {
+		ops.headers['Content-Type'] = 'application/x-www-form-urlencoded';
 		if (isObj(ops.body)) {
-			ops.body = serialize(ops.body)
+			ops.body = serialize(ops.body);
 		}
 	}
 
-	return createFetch(url,ops,this)
-}
+	let timeout = {
+		ms:options.timeout || this._base.timeout,
+		msg: options.timeoutMsg || this._base.timeoutMsg
+	};
+	return createFetch(url, ops, timeout, this);
+};
 
 Remote.prototype.base = function (options) {
 	if (options == null) {
-		return assign({},this._base)
-	}else{
-		assign(this._base,options)
+		return assign({}, this._base);
+	} else {
+		assign(this._base, options);
 	}
-}
+};
 
 module.exports = {
-	remote : new Remote,
-	create : ()=> new Remote
-}
+	remote: new Remote(),
+	create: function create() {
+		return new Remote();
+	}
+};

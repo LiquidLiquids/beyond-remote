@@ -62,9 +62,7 @@
  *
  */
 
-'use strict';
-
-const assign = require('beyond-lib/lib/assign');
+const assign = require('beyond-lib/lib/assign')
 const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8')
 
 function isfunc(func) {
@@ -161,73 +159,75 @@ Remote.prototype.off = function (type, handler) {
 	}
 };
 
-Remote.prototype.trigger = function (type, arg) {
+Remote.prototype.trigger = function (type, arg={}) {
+	let data = {type,data : arg}
 	if (this._handlers[type]) {
 		this._handlers[type].forEach(function (handler) {
 			if (isfunc(handler)) {
-				handler(arg);
+				handler(data)
 			}
-		});
+		})
 	}
-};
+}
 
 Remote.prototype.extend = function () {
-	let options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+	let options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0]
 
 	let ops = {
 		headers: assign({}, this._base.headers),
 		method: this._base.method,
 		credentials: this._base.credentials
-	};
-	let metas = assign({}, this._base, options);
-	let url = typeof url === 'string' || url == null ? mergeUrl(metas.basePath, metas.url || '') : metas.url;
+	}
+	let metas = assign({}, this._base, options)
+	let url = typeof url === 'string' || url == null ? mergeUrl(metas.basePath, metas.url || '') : metas.url
 	for (let k in options) {
 		//这四个参数从 metas 获取
 		if (['url', 'basePath', 'requestJSON', 'responseJSON'].indexOf(k) < 0) {
 			if (k === 'headers') {
-				assign(ops.headers, options[k]);
+				assign(ops.headers, options[k])
 			} else {
-				ops[k] = options[k];
+				ops[k] = options[k]
 			}
 		}
 	}
-	ops.method = ops.method.toUpperCase();
+	ops.method = ops.method.toUpperCase()
 	//'Content-Type': 'application/json'
-	if (metas.requestJSON && !ops.headers['Content-Type']) {
-		ops.headers['Content-Type'] = 'application/json';
-	}
-	if (metas.responseJSON && !ops.headers['Accept']) {
-		ops.headers['Accept'] = 'application/json';
-	}
+	if (ops.body && ops.method === 'POST') {
+		if (metas.requestJSON && !ops.headers['Content-Type']) {
+			ops.headers['Content-Type'] = 'application/json'
+		}
+		if (metas.responseJSON && !ops.headers['Accept']) {
+			ops.headers['Accept'] = 'application/json'
+		}
 
-	if (ops.headers['Content-Type'] && ops.headers['Content-Type'].indexOf('application/json') >= 0 && isObj(ops.body)) {
-		ops.body = JSON.stringify(ops.body);
-	}
-	if (ops.method === 'POST' && !ops.headers['Content-Type'] && !isFormData(ops.body)) {
-		ops.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-		if (isObj(ops.body)) {
-			ops.body = serialize(ops.body);
+		if (ops.headers['Content-Type'] && ops.headers['Content-Type'].indexOf('application/json') >= 0 && isObj(ops.body)) {
+			ops.body = JSON.stringify(ops.body)
+		}else if (!ops.headers['Content-Type'] && (isObj(ops.body) || typeof ops.body === 'string' )) {
+			ops.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+			if (isObj(ops.body)) {
+				ops.body = serialize(ops.body)
+			}
 		}
 	}
 
 	let timeout = {
 		ms:options.timeout || this._base.timeout,
 		msg: options.timeoutMsg || this._base.timeoutMsg
-	};
-	return createFetch(url, ops, timeout, this);
-};
+	}
+	return createFetch(url, ops, timeout, this)
+}
 
 Remote.prototype.base = function (options) {
 	if (options == null) {
-		return assign({}, this._base);
+		return assign({}, this._base)
 	} else {
-		assign(this._base, options);
+		assign(this._base, options)
 	}
-};
+}
 
 module.exports = {
 	remote: new Remote(),
 	create: function create() {
-		return new Remote();
+		return new Remote()
 	}
-};
+}

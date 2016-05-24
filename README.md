@@ -2,10 +2,6 @@
 
 用于封装ajax和fetch请求，此库依赖promise，推荐使用 [es6-promise](https://www.npmjs.com/package/es6-promise) ，ie8 还需要引入 es5-shim 
 
-## 0.1.2 修复bug
-requestJSON 仅在 content-type 未指定的时候时候设置 content-type 为 json
-requestJSON 仅在 accept 未指定的时候时候设置 accept 为 json
-
 ## 0.2.0 特性
 增加全局事件，支持所有 remote 实例 
 增加持续性请求事件 ，如 complete 事件会监测是否所有的请求都已经完成

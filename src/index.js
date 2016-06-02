@@ -101,10 +101,27 @@ function serialize(obj) {
 	return null;
 }
 
+function fakeResponse(msg, init) {
+    let blobMsg = msg;
+    let type = 'application/json';
+    if(typeof msg === 'object'){
+        blobMsg = [JSON.stringify(msg)];
+    }
+    if(typeof msg === 'string'){
+        blobMsg = [msg];
+        type = 'text/html';
+    }
+    if(!isObj(init)){
+        init = {"status" : 500}
+    }
+    let body = new Blob(blobMsg, {type: type});
+    return new Response(body, init);
+}
 function Timeout(ms, msg) {
 	return new Promise((resolve, reject) => {
 			setTimeout(function () {
-				reject(msg);
+                let response = fakeResponse(msg, { "status" : 408 , "statusText" : "timeout" });
+				reject(response);
 			}, ms);
 });
 }
@@ -116,19 +133,23 @@ function createFetch(url, options, timeout, remote) {
 		let result = new Promise((resolve, reject) =>{
 				Promise.race([fetch(url, options), Timeout(timeout.ms, timeout.msg)])
 				.then(function (response) {
+					let resCopy1 = response.clone();
+					let resCopy2 = response.clone();
 					let isSuccess = response.ok || response.status >= 200 && response.status < 300;
 					if (isSuccess) {
-						remote.trigger('success', response);
+						remote.trigger('success', resCopy1);
 					} else {
 						throw response;
 					}
-					remote.trigger('complete', response);
+					remote.trigger('complete', resCopy2);
 					let data = response.headers.get('content-type') &&  response.headers.get('content-type').indexOf('json') >= 0 ? response.json() : response.text();
 					resolve(data);
 				})
 				.catch(function (error) {
-					remote.trigger('error', error);
-					remote.trigger('complete', error);
+					let errorCopy1 = error.clone();
+					let errorCopy2 = error.clone();
+					remote.trigger('error', errorCopy1);
+					remote.trigger('complete', errorCopy2);
 					reject(error);
 				});
 		remote.trigger('send');
@@ -146,11 +167,8 @@ function Remote() {
 		method: 'GET',
 		requestJSON: true,
 		responseJSON: true,
-		timeout: 90000,
+		timeout: 10,
 		timeoutMsg: {
-			ok: false,
-			text: 'timeout',
-			status: 900,
 			title: '服务器超时！请重试！'
 		},
 		credentials: 'omit'

@@ -70,7 +70,7 @@ function isfunc(func) {
 }
 
 function mergeUrl(basePath='', url='') {
-	return (basePath + url).replace(/\/+/,'/')
+	return (basePath + '/' + url).replace(/\/+/,'/')
 }
 
 function isObj(obj) {
@@ -83,7 +83,7 @@ function isFormData(obj) {
 
 function serialize(obj) {
 	if (obj) {
-		let arr = []``
+		let arr = []
 		for (var k in obj) {
 			arr.push(encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
 		}
@@ -95,7 +95,7 @@ function serialize(obj) {
 function Timeout(ms, msg) {
 	return new Promise((resolve, reject) => {
 		setTimeout(()=>reject(msg) , ms)
-	}
+	})
 }
 
 

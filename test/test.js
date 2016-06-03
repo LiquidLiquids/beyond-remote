@@ -58,18 +58,20 @@ describe("remote", function () {
             done()
         })
     })
-    it("should works well when timeout ", function (done) {
+    it("should works well when timeout and it well be a response like data", function (done) {
         expect(typeof  timeoutCall === 'function').toEqual(true)
         var errorFlag = 0;
         timeoutCall().then(function (data) {
             errorFlag = 1;
         }).catch(function (data) {
-            if(data.status === 900){
-                errorFlag = 2;
+            if (data.status === 408) {
+                return data.json().then(error => {
+                    errorFlag = 2;
+                })
             }
         }).then(function () {
             expect(errorFlag).toBe(2);
-            done()
+            done();
         });
     })
 })
@@ -124,17 +126,17 @@ describe("remote events", function () {
             url: '/mock/db.json'
         })
         beyond.on('error', function (data) {
-            if(data){
+            if (data) {
                 error++
             }
         })
         beyond.on('success', function (data) {
-            if(data){
+            if (data) {
                 success++
             }
         })
         beyond.on('complete', function (data) {
-            if(data){
+            if (data) {
                 complete++
             }
         })
@@ -162,16 +164,16 @@ describe("remote events", function () {
             url: '/mock/undefined.json'
         })
         beyond.on('error', function (data) {
-            if(data){
+            if (data) {
                 error++
             }
         })
         beyond.on('complete', function (data) {
-            if(data){
+            if (data) {
                 complete++
             }
         })
-        remote1().then(function () {
+        remote1().catch(function () {
             expect(success).toEqual(0)
             expect(complete).toEqual(1)
             expect(error).toEqual(1)
@@ -214,4 +216,35 @@ describe("remote events", function () {
         expect(start).toEqual(3)
         expect(send).toEqual(5)
     })
+
+    it("work well when global event and local event both read response body", function () {
+        var beyond = beyondRemote.create();
+        var basePath = '/base'
+        var method = 'POST'
+        beyond.base({
+            basePath: basePath,
+            method: method
+        })
+        var event = 0;
+        var remote = beyond.extend({
+            url: '/mock/null.json'
+        })
+        beyond.on('error', function (error) {
+            return error.json().then(data => {
+                event++
+            })
+        })
+        beyond.on('complete', function (res) {
+            return res.json().then(data => {
+                event++
+            })
+        })
+        remote().then().catch(error => {
+            return error.json().then(data => {
+                event++
+                expect(event).toEqual(3)
+            })
+        })
+    })
 })
+

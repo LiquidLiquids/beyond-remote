@@ -61,7 +61,6 @@
  * users.getUser()
  *
  */
-
 const assign = require('beyond-lib/lib/assign')
 const fetch = typeof window !== 'undefined' && window.fetch && !window.__disableNativeFetch ? window.fetch : require('fetch-ie8')
 
@@ -136,7 +135,7 @@ function createFetch(url, options, timeout, remote) {
 		let result = new Promise((resolve, reject) => {
 			Promise.race([fetch(url, options), Timeout(timeout.ms, timeout.msg)])
 				.then(function(response) {
-					let isSuccess = response.ok || response.status >= 200 && response.status < 300
+					let isSuccess = response.ok || (response.status >= 200 && response.status < 300)
 					if (isSuccess) {
 						remote.trigger('success', response.clone())
 					} else {

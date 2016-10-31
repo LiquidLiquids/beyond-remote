@@ -1,6 +1,5 @@
 // Karma configuration
 // Generated on Thu Dec 10 2015 12:45:00 GMT+0800 (中国标准时间)
-var path =require('path')
 module.exports = function(config) {
   config.set({
 
@@ -79,8 +78,8 @@ module.exports = function(config) {
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
     // browsers: ['Chrome', 'IE', 'Firefox'],
-    // browsers: ['Chrome', 'Firefox', 'IE8','IE9','IE10','IE'],
-    browsers:['IE9','Chrome'],
+    browsers: ['Chrome', 'Firefox', 'IE8','IE9','IE10','IE'],
+    // browsers:['Chrome'],
     customLaunchers: {
       IE10: {
         base: 'IE',

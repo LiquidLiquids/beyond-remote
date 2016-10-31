@@ -16,18 +16,17 @@ var remote = require('beyond-remote').remote
 //default base params
 remote.base({
 	basePath : '',
-	method : 'GET',
-	credentials: 'omit',
 	requestJSON : true,
-	responseJSON : true
+	responseJSON : true,
+	timeout : 10
 })
 
-var getUsers = remote.extend({
+var getUsers = remote.create({
 	url : '/user/list'
 })
 
 var getUser = function(id){
-	var call = remote.extend({
+	var call = remote.create({
 		url : '/user/detail',
 		headers : {
 			'Content-Type' : 'application/json'
@@ -49,14 +48,13 @@ getUser(1).then(function(json){
       console.log(error)
   })
 ```
-`requestJSON` 为 true 会设置 `Content-Type` 为 `application/json` 如果 Content-Type 没有指定，并会将 object 类型的 body 通过 `JSON.stringify` 转化 json 格式字符串
+`requestJSON` 为 true 且没有设置`content-type`的情况下， 会设置 `content-type` 为 `application/json` ，并会将 object 类型的 body 通过 `JSON.stringify` 转化 json 格式字符串
 
+`responseJSON` 为 true 且没有设置`content-type`的情况下， 会设置 `Accept` 为 `application/json`
 
-`responseJSON` 为 true 会设置 `Accept` 为 `application/json`
+如果返回 headers 的 `content-type` 为  `application/json` , 则自动将返回数据做json转换
 
-如果返回 headers 的 `Content-Type` 为  `application/json` , 则自动将返回数据做json转换
-
-如果 body 的内容是 `FormData` 类型 , 请将 `requestJSON` 设为`false` , 且不指定 Content-Type , 则将由服务端指定 Content-Type 的类型.
+如果 body 的内容是 `FormData` 类型 , 请将 `requestJSON` 设为`false` , 并推荐不指定 content-type 
 
 ## 高级
 
@@ -69,7 +67,7 @@ remote.on('success',successHandle)
 remote.on('error',errorHandle)
 remote.on('complete',completeHandle)
 
-var getUser = remote.extend({
+var getUser = remote.create({
 	url : '/getUser'
 })
 

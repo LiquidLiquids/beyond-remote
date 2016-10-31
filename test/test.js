@@ -1,19 +1,16 @@
 var beyondRemote = require('../src/index')
 describe("exports", function () {
     it("should have an instance and a instance creat function", function () {
-        var constructor = beyondRemote.remote.constructor
-        var remote2 = beyondRemote.create()
-        expect(beyondRemote.remote instanceof constructor).toEqual(true)
-        expect(remote2 instanceof constructor).toEqual(true)
-        expect(remote2.constructor === constructor)
-        expect(typeof beyondRemote.create === 'function').toEqual(true)
+        var remote = beyondRemote.remote
+        var Maker = beyondRemote.Remote
+        expect(remote instanceof Maker).toEqual(true)
     })
 
 })
 
 describe("remote", function () {
     var beyond = beyondRemote.remote
-    var newBeyond = beyondRemote.create()
+    var newBeyond = new beyondRemote.Remote
     var basePath = '/base'
     var method = 'POST'
     var credentials = 'include'
@@ -22,21 +19,15 @@ describe("remote", function () {
         method: method,
         credentials: credentials
     })
-    var jsonCall = beyond.extend({
+    var jsonCall = beyond.create({
         url: '/mock/db.json'
     })
-    var htmlCall = beyond.extend({
+    var htmlCall = beyond.create({
         url: '/mock/db.html'
     })
-    var timeoutCall = newBeyond.extend({
+    var timeoutCall = newBeyond.create({
         url: 'https://api.github.com/events',
-        timeout: 10
-    })
-    it("should works well on base", function () {
-        var base = beyond.base()
-        expect(base.basePath).toEqual(basePath)
-        expect(base.method).toEqual(method)
-        expect(base.credentials).toEqual(credentials)
+        timeout: 0
     })
     it("should works well on json fetch", function (done) {
         expect(typeof jsonCall === 'function').toEqual(true)
@@ -50,10 +41,15 @@ describe("remote", function () {
     })
     it("should works well on plain text fetch", function (done) {
         expect(typeof htmlCall === 'function').toEqual(true)
-        htmlCall().then(function (data) {
+        htmlCall()
+        .then(function (response) {
+            return response.text()
+        })
+        .then(function (data) {
             expect(data && typeof data === 'string').toEqual(true)
             done()
-        }).catch(function (error) {
+        })
+        .catch(function (error) {
             expect(error).toEqual(true)
             done()
         })
@@ -61,15 +57,16 @@ describe("remote", function () {
     it("should works well when timeout and it well be a response like data", function (done) {
         expect(typeof  timeoutCall === 'function').toEqual(true)
         var errorFlag = 0;
-        timeoutCall().then(function (data) {
+        timeoutCall()
+        .then(function (data) {
             errorFlag = 1;
-        }).catch(function (data) {
-            if (data.status === 408) {
-                return data.json().then(error => {
-                    errorFlag = 2;
-                })
+        })
+        .catch(function (data) {
+            if (data.status === 408 && data.statusText === 'timeout') {
+                errorFlag = 2;
             }
-        }).then(function () {
+        })
+        .then(function () {
             expect(errorFlag).toBe(2);
             done();
         });
@@ -78,7 +75,7 @@ describe("remote", function () {
 
 describe("remote events", function () {
     it("should works on start & send", function () {
-        var beyond = beyondRemote.create()
+        var beyond = new beyondRemote.Remote
         var basePath = '/base'
         var method = 'POST'
         beyond.base({
@@ -90,7 +87,7 @@ describe("remote events", function () {
         var send1 = 0
         var send2 = 0
 
-        var remote1 = beyond.extend({
+        var remote1 = beyond.create({
             url: '/mock/db.json'
         })
         beyond.on('start', function () {
@@ -112,7 +109,7 @@ describe("remote events", function () {
         expect(send2).toEqual(1)
     })
     it("should works on success & complete", function (done) {
-        var beyond = beyondRemote.create()
+        var beyond = new beyondRemote.Remote
         var basePath = '/base'
         var method = 'POST'
         beyond.base({
@@ -122,7 +119,7 @@ describe("remote events", function () {
         var success = 0
         var complete = 0
         var error = 0
-        var remote1 = beyond.extend({
+        var remote1 = beyond.create({
             url: '/mock/db.json'
         })
         beyond.on('error', function (data) {
@@ -149,7 +146,7 @@ describe("remote events", function () {
 
     })
     it("should works on error & complete", function (done) {
-        var beyond = beyondRemote.create()
+        var beyond = new beyondRemote.Remote
         var basePath = '/base'
         var method = 'POST'
         beyond.base({
@@ -160,7 +157,7 @@ describe("remote events", function () {
         var complete = 0
         var error = 0
 
-        var remote1 = beyond.extend({
+        var remote1 = beyond.create({
             url: '/mock/undefined.json'
         })
         beyond.on('error', function (data) {
@@ -181,7 +178,7 @@ describe("remote events", function () {
         })
     })
     it("should works on off handle", function () {
-        var beyond = beyondRemote.create()
+        var beyond = new beyondRemote.Remote
         var basePath = '/base'
         var method = 'POST'
         beyond.base({
@@ -190,7 +187,7 @@ describe("remote events", function () {
         })
         var start = 0
         var send = 0
-        var remote1 = beyond.extend({
+        var remote1 = beyond.create({
             url: '/mock/db.json'
         })
 
@@ -217,8 +214,8 @@ describe("remote events", function () {
         expect(send).toEqual(5)
     })
 
-    it("work well when global event and local event both read response body", function () {
-        var beyond = beyondRemote.create();
+    it("work well when global event and local event both read response body", function (done) {
+        var beyond = new beyondRemote.Remote;
         var basePath = '/base'
         var method = 'POST'
         beyond.base({
@@ -226,24 +223,30 @@ describe("remote events", function () {
             method: method
         })
         var event = 0;
-        var remote = beyond.extend({
+        var remote = beyond.create({
             url: '/mock/null.json'
         })
-        beyond.on('error', function (error) {
-            return error.json().then(data => {
-                event++
-            })
+        beyond.on('error', function (res) {
+            console.log(res)
+            event++
+            // return error.json().then(data => {
+            // })
         })
         beyond.on('complete', function (res) {
-            return res.json().then(data => {
-                event++
-            })
+            console.log(res)
+            event++
+            // return res.json().then(data => {
+            // })
         })
-        remote().then().catch(error => {
-            return error.json().then(data => {
-                event++
-                expect(event).toEqual(3)
-            })
+        remote()
+        .catch(error => {
+            console.log(error)
+            event++
+            expect(event).toEqual(3)
+            done()
+
+            // return error.json().then(data => {
+            // })
         })
     })
 })

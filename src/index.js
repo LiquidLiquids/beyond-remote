@@ -72,7 +72,7 @@ function mergeUrl(basePath = '', path = '') {
 	if (!basePath && !path ) {
 		return ''
 	}else{
-		return basePath ? (basePath + '/' + path).replace(/([^:])\/+/g, '$1/') : path
+		return basePath ? (basePath + '/' + path).replace(/([^:\/])\/+/g, '$1/') : path
 	}
 }
 

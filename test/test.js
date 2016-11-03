@@ -29,6 +29,27 @@ describe("remote", function () {
         url: 'https://api.github.com/events',
         timeout: 0
     })
+    it("should fetch with correct url", function (done){
+        var remote = new beyondRemote.Remote
+        var pathname = '/mock/db.html'
+        var basePath = location.protocol + '//' + location.host
+        remote.base({
+            basePath: basePath + '/'
+        })
+        var call = remote.create({
+            url: pathname
+        })
+        function handlerComplete(response){
+           if(!response.url){
+               console.warn('can not find response.url')
+               done()
+               return
+           }
+            expect(response.url).toEqual(basePath + pathname)
+            done();
+        }
+        call().then(handlerComplete, handlerComplete)
+    })
     it("should works well on json fetch", function (done) {
         expect(typeof jsonCall === 'function').toEqual(true)
         jsonCall().then(function (data) {
